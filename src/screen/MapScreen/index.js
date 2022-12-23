@@ -28,8 +28,8 @@ const MapScreen = () => {
   const [currentLocation, setPosition] = useState({
     latitude: 37.78825,
     longitude: -122.4324,
-    latitudeDelta: 0.015,
-    longitudeDelta: 0.0121,
+    latitudeDelta: 0.3,
+    longitudeDelta: 0.3,
   });
 
   const onMapReady = () => {
@@ -59,9 +59,39 @@ const MapScreen = () => {
   };
 
   useEffect(() => {
-    const collectionRef = firestore().collection('Users');
+    const latitude = currentLocation.latitude;
+    console.log(
+      '🚀 ~ file: index.js:63 ~ useEffect ~ currentLocation.latitude',
+      currentLocation.latitude,
+    );
+    const longitude = currentLocation.longitude;
+    const distance = 1000;
+
+    let lat = 0.0144927536231884;
+    let lon = 0.0181818181818182;
+
+    let lowerLat = latitude - lat * distance;
+    let lowerLon = longitude - lon * distance;
+
+    let greaterLat = latitude + lat * distance;
+    let greaterLon = longitude + lon * distance;
+
+    let lesserGeopoint = new firestore.GeoPoint(lowerLat, lowerLon);
+    let greaterGeopoint = new firestore.GeoPoint(greaterLat, greaterLon);
+
+    const collectionRef = firestore()
+      .collection('Users')
+      .where('liveLocation', '>', lesserGeopoint)
+      .where('liveLocation', '<', greaterGeopoint);
     const unsubscribe = collectionRef.onSnapshot(
       querySnapshot => {
+        querySnapshot.docs.map(item => {
+          console.log(
+            '🚀 ~ file: index.js:66 ~ useEffect ~ filterData',
+            item?.data().liveLocation,
+          );
+        });
+
         const filterData =
           querySnapshot.docs.filter(
             i => i.data().userId !== auth().currentUser.uid,
@@ -100,7 +130,7 @@ const MapScreen = () => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentLocation]);
 
   useEffect(() => {
     const locationUpload = setInterval(() => {
@@ -148,8 +178,8 @@ const MapScreen = () => {
               latitude: i.liveLocation.latitude,
               longitude: i.liveLocation.longitude,
             }}
-            centerOffset={{x: -18, y: -60}}
-            anchor={{x: 0.69, y: 1}}
+            // centerOffset={{x: -18, y: -60}}
+            // anchor={{x: 0.69, y: 1}}
             pinColor={'blue'}
           />
         ))}
